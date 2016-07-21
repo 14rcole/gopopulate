@@ -4,7 +4,6 @@ import (
   "os"
   "math/rand"
   "time"
-  "fmt"
   "strings"
   "errors"
   "bytes"
@@ -75,7 +74,6 @@ func popDirHelper(baseDir string, depth, maxFiles int) error {
 }
 
 func pickType() string {
-  fmt.Println("fileTypes: ", fileTypes)
   return fileTypes[src.Int63() % (int64)(len(fileTypes))]
 }
 
