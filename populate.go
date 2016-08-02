@@ -7,6 +7,9 @@ import (
   "strings"
   "errors"
   "bytes"
+  "archive/tar"
+  "io"
+  "io/ioutil"
 )
 
 const validChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMONPQRSTUVWXYZ-_."
@@ -147,4 +150,63 @@ func genRandomString(length int64) string {
     name[i] = validChars[src.Int63() % int64(len(validChars))]
   }
   return string(name)
+}
+
+// Tar a directory and its subdirectories
+func Tar(tarDir, tarPath string) error {
+  file, err := os.Create(tarPath)
+  if err != nil {
+    return err
+  }
+
+  tw := tar.NewWriter(file)
+  paths, err := generateFilePaths(tarDir)
+  if err != nil {
+    return err
+  }
+
+  for _, file := range paths {
+    if err := addToTar(tw, tarDir, file); err != nil {
+      return err
+    }
+  }
+  return nil
+}
+
+func generateFilePaths(basePath string) ([]string, error) {
+  files, err := ioutil.ReadDir(basePath)
+  if err != nil {
+    return nil, err
+  }
+
+  fileNames := make([]string, len(files))
+  for _, file := range files {
+    fileNames = append(fileNames, file.Name())
+  }
+  return fileNames, nil
+}
+
+func addToTar(tw *tar.Writer, basePath, path string) error {
+  file, err := os.Open(basePath + path)
+  if err != nil {
+    return err
+  }
+  defer file.Close()
+
+  if stat, err := file.Stat(); err == nil {
+    header := new(tar.Header)
+    header.Name = path
+    header.Size = stat.Size()
+    header.Mode = int64(stat.Mode())
+    header.ModTime = stat.ModTime()
+
+    if err = tw.WriteHeader(header); err != nil {
+      return err
+    }
+    if _, err = io.Copy(tw, file); err != nil {
+      return err
+    }
+    return nil
+  }
+  return err
 }
