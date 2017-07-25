@@ -114,11 +114,21 @@ func genFilePath(baseDir, newFile string) string {
 }
 
 func genRandomName() string {
-  var length int64
-  for length == 0 {
-    length = rand.Int63() % 8
-  }
-  return genRandomString(length)
+	// Blacklist strings not usable in filenames
+	blacklist := map[string]bool{"": true,
+		".":  true,
+		"..": true,
+	}
+	var length int64
+	for length == 0 {
+		length = rand.Int63() % 8
+	}
+	var s string
+	for blacklist[s] {
+		s = genRandomString(length)
+	}
+
+	return s
 }
 
 func writeDataToFile(f *os.File) error {
